@@ -32,7 +32,7 @@ public class RadixTreeTest {
         Set<String> resultSet = tree.keySet();
         System.out.println(resultSet.size() == tree.size());
         for (String key : tree.keySet()) {
-            System.out.println(tree.get(key) == reference.get(key));
+            System.out.println(tree.get(key).equals(reference.get(key)));
         }
 
         resultSet = tree.keySet("te");
@@ -64,5 +64,17 @@ public class RadixTreeTest {
         System.out.println(tree.removePrefix("z").size() == 0);
         System.out.println(tree.remove("yyy") == null);
         System.out.println(tree.size() == reference.size()-3);
+
+        System.out.println(tree.removePrefix("").size() == reference.size()-3);
+        System.out.println(tree.isEmpty());
+
+        tree.putAll(reference);
+        System.out.println(tree.size() == reference.size());
+        System.out.println(tree.remove("").equals(reference.get("")));
+        System.out.println(tree.size() == reference.size()-1);
+        for (String key : reference.keySet()) {
+            if (key.equals("")) continue;
+            System.out.println(tree.get(key).equals(reference.get(key)));
+        }
     }
 }

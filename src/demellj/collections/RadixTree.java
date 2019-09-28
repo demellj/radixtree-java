@@ -113,7 +113,7 @@ public class RadixTree<V> implements Map<String, V> {
 
             if (match.node != root && match.node.isLeafNode())
                 match.nodeParent.removeChild(match.node);
-            else if (match.nodeParent != root)
+            else if (match.nodeParent != null && match.nodeParent != root)
                 match.nodeParent.tryMerge();
 
             size--;
@@ -135,11 +135,9 @@ public class RadixTree<V> implements Map<String, V> {
             } else {
                 if (match.nodeParent.removeChild(match.node)) {
                     result = collectEntries(match.node);
+                    size -= result.size();
                 }
             }
-
-            if (result != null)
-                size -= result.size();
         }
 
         return result == null ? new HashSet<>() : result;
@@ -198,9 +196,8 @@ public class RadixTree<V> implements Map<String, V> {
 
         final PrefixMatch match = findMatchingPrefixEnd(prefix);
 
-        if (match.matchEnd == prefix.length()) {
+        if (match.matchEnd == prefix.length())
             return collectEntries(match.node);
-        }
 
         return new HashSet<>();
     }
