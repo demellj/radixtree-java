@@ -43,6 +43,11 @@ public class RadixTree<V> implements Map<String, V> {
         return false;
     }
 
+    public boolean containsPrefix(String key) {
+        final PrefixMatch match = findMatchingPrefixEnd(key);
+        return match.matchEnd == key.length();
+    }
+
     @Override
     public V get(Object o) {
         if (!(o instanceof String))
@@ -180,7 +185,7 @@ public class RadixTree<V> implements Map<String, V> {
 
     @Override
     public Set<Entry<String, V>> entrySet() {
-        return entrySet("");
+        return collectEntries(root);
     }
 
     public Set<String> keySet(String prefix) {
