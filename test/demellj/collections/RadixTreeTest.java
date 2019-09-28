@@ -31,8 +31,10 @@ public class RadixTreeTest {
 
         Set<String> resultSet = tree.keySet();
         System.out.println(resultSet.size() == tree.size());
-        for (String key : tree.keySet()) {
+        for (String key : reference.keySet()) {
             System.out.println(tree.get(key).equals(reference.get(key)));
+            System.out.println(tree.containsKey(key));
+            System.out.println(tree.containsValue(reference.get(key)));
         }
 
         resultSet = tree.keySet("te");

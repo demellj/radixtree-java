@@ -21,15 +21,21 @@ public class RadixTree<V> implements Map<String, V> {
     }
 
     @Override
-    public boolean containsKey(Object o) {
-        return get(0) != null;
+    public boolean containsKey(Object key) {
+        return get(key) != null;
     }
 
+    /**
+     * O(n) search value stored in this radix tree. Where n is the number of values stored
+     * in this tree.
+     * @param value the value to search
+     * @return true if value is stored somewhere in the tree
+     */
     @Override
-    public boolean containsValue(Object v) {
-        if (v == null) return false;
+    public boolean containsValue(Object value) {
+        if (value == null) return false;
 
-        for (final V value : values()) {
+        for (final V v : values()) {
             if (value.equals(v))
                 return true;
         }
