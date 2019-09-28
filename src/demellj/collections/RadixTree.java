@@ -68,45 +68,34 @@ public class RadixTree<V> implements Map<String, V> {
 
         final PrefixMatch match = findMatchingPrefixEnd(key);
 
-        // key is fully matched
-        if (match.matchEnd == keyLength) {
-            // key prefix match ends at end of this node
-            if (match.node.end == match.matchEnd) {
+        if (match.node.end != match.matchEnd) {
+            // key prefix match ends within but not at end of node substring
+            // NOTE: a key prefix cannot end before node substring start, by nature
+            // of how findMatchingPrefixEnd(..) works
+            match.node.splitAt(match.matchEnd);
+
+            final Node extension = new Node(key, match.matchEnd, keyLength);
+            match.node.add(extension);
+            extension.value = value;
+            size++;
+        } else {
+            // key prefix match ends at end of this node substring
+            if (match.matchEnd == keyLength) {
+                // key is fully matched
                 final V presentValue = match.node.value;
                 if (presentValue == null)
                     size++;
                 match.node.value = value;
                 return presentValue;
             } else {
-                // key prefix match ends within node
-                // NOTE: a key prefix cannot end before node start, by nature
-                // of how findMatchingPrefixEnd(..) works
-                match.node.splitAt(match.matchEnd);
-
-                final Node extension = new Node(key, match.matchEnd, keyLength);
-                match.node.add(extension);
-                extension.value = value;
-                size++;
-            }
-        } else { // key is partially matched
-            // key partial match ends at end of node
-            if (match.node.end == match.matchEnd) {
-                final Node extension = new Node(key, match.matchEnd, keyLength);
-                match.node.add(extension);
-                extension.value = value;
-                size++;
-            } else {
-                // key partial match ends within node
-                // NOTE: a key prefix cannot end before node start, by nature
-                // of how findMatchingPrefixEnd(..) works
-                match.node.splitAt(match.matchEnd);
-
+                // key is partially matched
                 final Node extension = new Node(key, match.matchEnd, keyLength);
                 match.node.add(extension);
                 extension.value = value;
                 size++;
             }
         }
+
         return null;
     }
 
