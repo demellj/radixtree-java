@@ -56,7 +56,9 @@ public class RadixTree<V> implements Map<String, V> {
         final String key = (String) o;
         final PrefixMatch match = findMatchingPrefixEnd(key);
 
-        if (match.matchEnd == key.length() && match.node.value != null)
+        if (match.matchEnd == key.length() &&
+                match.matchEnd == match.node.end &&
+                match.node.value != null)
             return match.node.value;
 
         return null;
@@ -107,7 +109,9 @@ public class RadixTree<V> implements Map<String, V> {
         final String key = (String) o;
         final PrefixMatch match = findMatchingPrefixEnd(key);
 
-        if (match.matchEnd == key.length() && match.node.value != null) {
+        if (match.matchEnd == key.length() &&
+                match.matchEnd == match.node.end &&
+                match.node.value != null) {
             final V value = match.node.value;
             match.node.value = null;
 

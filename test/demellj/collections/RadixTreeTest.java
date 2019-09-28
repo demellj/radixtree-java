@@ -27,15 +27,26 @@ public class RadixTreeTest {
         System.out.println(tree.get("foo").equals("bar"));
         System.out.println(tree.get("bar") == null);
         System.out.println(tree.get("testing").equals("123"));
+        System.out.println(tree.get("testin") == null);
         System.out.println(tree.get("").equals("Zing"));
 
         Set<String> resultSet = tree.keySet();
         System.out.println(resultSet.size() == tree.size());
+        System.out.println(tree.containsPrefix(""));
         for (String key : reference.keySet()) {
             System.out.println(tree.get(key).equals(reference.get(key)));
             System.out.println(tree.containsKey(key));
+            System.out.println(tree.containsPrefix(key));
             System.out.println(tree.containsValue(reference.get(key)));
+            final int keyLength = key.length();
+            for (int i = 1; i <= keyLength; ++i) {
+                if (!reference.containsKey(key))
+                    System.out.println(!tree.containsKey(key));
+                System.out.println(tree.containsPrefix(key.substring(0, keyLength)));
+                System.out.println(!tree.containsPrefix(key.substring(0, keyLength) + "!"));
+            }
         }
+        System.out.println(!tree.containsPrefix("z"));
 
         resultSet = tree.keySet("te");
         System.out.println(resultSet.size() == 3);
@@ -48,6 +59,9 @@ public class RadixTreeTest {
         for (String key : resultSet) {
             System.out.println(key.startsWith("tes"));
         }
+
+        System.out.println(tree.remove("testin") == null);
+        System.out.println(tree.size() == reference.size());
 
         String val = tree.remove("test");
         System.out.println(val.equals(reference.get("test")));
@@ -78,15 +92,5 @@ public class RadixTreeTest {
             if (key.equals("")) continue;
             System.out.println(tree.get(key).equals(reference.get(key)));
         }
-
-        System.out.println(tree.containsPrefix(""));
-        for (String key : reference.keySet()) {
-            final int keyLength = key.length();
-            for (int i = 1; i <= keyLength; ++i) {
-                System.out.println(tree.containsPrefix(key.substring(0, keyLength)));
-                System.out.println(!tree.containsPrefix(key.substring(0, keyLength) + "!"));
-            }
-        }
-        System.out.println(!tree.containsPrefix("z"));
     }
 }
