@@ -322,13 +322,13 @@ public class RadixTree<V> implements Map<String, V> {
 
         private void add(Node child) {
             assert child != null;
+            assert !child.ref.isEmpty();
             assert child.start < child.ref.length();
 
             if (children == null)
                 children = new HashMap<>();
 
-            if (!child.ref.isEmpty())
-                children.put(child.ref.charAt(child.start), child);
+            children.put(child.ref.charAt(child.start), child);
         }
 
         /**
