@@ -110,12 +110,39 @@ public class RadixTree<V> implements Map<String, V> {
         if (match.matchEnd == key.length() && match.node.value != null) {
             final V value = match.node.value;
             match.node.value = null;
-            match.node.tryMerge();
+
+            if (match.node != root && match.node.isLeafNode())
+                match.nodeParent.removeChild(match.node);
+            else if (match.nodeParent != root)
+                match.nodeParent.tryMerge();
+
             size--;
             return value;
         }
 
         return null;
+    }
+
+    public Set<Entry<String, V>> removePrefix(String prefix) {
+        final PrefixMatch match = findMatchingPrefixEnd(prefix);
+
+        Set<Entry<String, V>> result = null;
+
+        if (match.matchEnd == prefix.length()) {
+            if (match.node == root) {
+                result = collectEntries(match.node);
+                clear();
+            } else {
+                if (match.nodeParent.removeChild(match.node)) {
+                    result = collectEntries(match.node);
+                }
+            }
+
+            if (result != null)
+                size -= result.size();
+        }
+
+        return result == null ? new HashSet<>() : result;
     }
 
     @Override
@@ -169,24 +196,30 @@ public class RadixTree<V> implements Map<String, V> {
     public Set<Entry<String, V>> entrySet(String prefix) {
         assert prefix != null;
 
-        final HashSet<Entry<String, V>> result = new HashSet<>();
-
         final PrefixMatch match = findMatchingPrefixEnd(prefix);
 
         if (match.matchEnd == prefix.length()) {
-            final Queue<Node> queue = new LinkedList<>();
-            queue.offer(match.node);
+            return collectEntries(match.node);
+        }
 
-            while (!queue.isEmpty()) {
-                final Node node = queue.poll();
+        return new HashSet<>();
+    }
 
-                if (node.value != null)
-                    result.add(node);
+    private Set<Entry<String, V>> collectEntries(Node start) {
+        final HashSet<Entry<String, V>> result = new HashSet<>();
 
-                if (node.children != null) {
-                    for (final Node child : node.children.values())
-                        queue.offer(child);
-                }
+        final Queue<Node> queue = new LinkedList<>();
+        queue.offer(start);
+
+        while (!queue.isEmpty()) {
+            final Node node = queue.poll();
+
+            if (node.value != null)
+                result.add(node);
+
+            if (node.children != null) {
+                for (final Node child : node.children.values())
+                    queue.offer(child);
             }
         }
 
@@ -321,6 +354,21 @@ public class RadixTree<V> implements Map<String, V> {
 
         private boolean isValueNode() {
             return value != null;
+        }
+
+        private boolean removeChild(Node child) {
+            final Character idx = child.ref.charAt(child.start);
+
+            if (!isLeafNode()) {
+                final Node actualChild = children.get(idx);
+
+                if (actualChild == child) {
+                    children.remove(idx);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /**

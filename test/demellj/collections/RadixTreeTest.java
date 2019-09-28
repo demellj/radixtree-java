@@ -1,6 +1,7 @@
 package demellj.collections;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class RadixTreeTest {
@@ -17,6 +18,7 @@ public class RadixTreeTest {
 
         tree.putAll(reference);
 
+        System.out.println(tree.size() == reference.size());
         System.out.println(tree.get("tin") == null);
         System.out.println(tree.get("tea").equals("party"));
         System.out.println(tree.get("te") == null);
@@ -44,5 +46,23 @@ public class RadixTreeTest {
         for (String key : resultSet) {
             System.out.println(key.startsWith("tes"));
         }
+
+        String val = tree.remove("test");
+        System.out.println(val.equals(reference.get("test")));
+        System.out.println(tree.get("test") == null);
+        System.out.println(tree.size() == reference.size()-1);
+
+        for (Map.Entry<String, String> entry : tree.removePrefix("t")) {
+            System.out.println(entry.getKey().startsWith("te"));
+            System.out.println(entry.getValue().equals(reference.get(entry.getKey())));
+        }
+        System.out.println(tree.size() == reference.size()-3);
+        System.out.println(tree.get("testing") == null);
+        System.out.println(tree.get("tea") == null);
+        System.out.println(tree.get("test") == null);
+
+        System.out.println(tree.removePrefix("z").size() == 0);
+        System.out.println(tree.remove("yyy") == null);
+        System.out.println(tree.size() == reference.size()-3);
     }
 }
