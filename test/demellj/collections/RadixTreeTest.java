@@ -32,25 +32,6 @@ public class RadixTreeTest {
 
         Set<String> resultSet = tree.keySet();
         System.out.println(resultSet.size() == tree.size());
-        System.out.println(tree.containsPrefix(""));
-        for (String refKey : reference.keySet()) {
-            final int keyLength = refKey.length();
-            for (int i = 1; i <= keyLength; ++i) {
-                final String key = refKey.substring(0, i);
-                if (!reference.containsKey(key)) {
-                    System.out.println(!tree.containsKey(key));
-                    System.out.println(tree.containsPrefix(key));
-                } else {
-                    System.out.println(tree.get(key).equals(reference.get(key)));
-                    System.out.println(tree.containsKey(key));
-                    System.out.println(tree.containsPrefix(key));
-                    System.out.println(tree.containsValue(reference.get(key)));
-                }
-                System.out.println(!tree.containsKey(key+"!"));
-                System.out.println(!tree.containsPrefix(key + "!"));
-            }
-        }
-        System.out.println(!tree.containsPrefix("z"));
 
         resultSet = tree.keySet("te");
         System.out.println(resultSet.size() == 3);
@@ -71,6 +52,28 @@ public class RadixTreeTest {
         System.out.println(val.equals(reference.get("test")));
         System.out.println(tree.get("test") == null);
         System.out.println(tree.size() == reference.size()-1);
+
+        val = tree.remove("testing");
+        System.out.println(val.equals(reference.get("testing")));
+        System.out.println(tree.get("testing") == null);
+        System.out.println(tree.size() == reference.size()-2);
+
+        // put values back in, longer one first
+        tree.put("testing", reference.get("testing"));
+        tree.put("test", reference.get("test"));
+        System.out.println(tree.size() == reference.size());
+        System.out.println(tree.get("testing").equals(reference.get("testing")));
+        System.out.println(tree.get("test").equals(reference.get("test")));
+
+        tree.removePrefix("test");
+        System.out.println(tree.size() == reference.size()-2);
+
+        // put values back in, shorter one first
+        tree.put("test", reference.get("test"));
+        tree.put("testing", reference.get("testing"));
+        System.out.println(tree.size() == reference.size());
+        System.out.println(tree.get("testing").equals(reference.get("testing")));
+        System.out.println(tree.get("test").equals(reference.get("test")));
 
         for (Map.Entry<String, String> entry : tree.removePrefix("t")) {
             System.out.println(entry.getKey().startsWith("te"));
@@ -95,6 +98,49 @@ public class RadixTreeTest {
         for (String key : reference.keySet()) {
             if (key.equals("")) continue;
             System.out.println(tree.get(key).equals(reference.get(key)));
+        }
+
+        System.out.println(tree.containsPrefix(""));
+        System.out.println(!tree.containsPrefix("z"));
+
+        // exhaustive prefix and key/value checks
+        for (String refKey : reference.keySet()) {
+            final int keyLength = refKey.length();
+            for (int i = 1; i <= keyLength; ++i) {
+                final String key = refKey.substring(0, i);
+                if (!reference.containsKey(key)) {
+                    System.out.println(!tree.containsKey(key));
+                    System.out.println(tree.get(key) == null);
+                    final int size = tree.size();
+                    System.out.println(tree.remove(key) == null);
+                    System.out.println(tree.size() == size);
+                    final Set<Map.Entry<String, String>> values = tree.removePrefix(key);
+                    System.out.println(tree.size() == size - values.size());
+                    for (Map.Entry<String, String> entry : values) {
+                        System.out.println(!tree.containsKey(entry.getKey()));
+                        System.out.println(tree.get(entry.getKey()) == null);
+                        tree.put(entry.getKey(), entry.getValue());
+                    }
+                    System.out.println(tree.size() == size);
+                } else {
+                    System.out.println(tree.get(key).equals(reference.get(key)));
+                    System.out.println(tree.containsPrefix(key));
+                    System.out.println(tree.containsValue(reference.get(key)));
+                    final int size = tree.size();
+                    final String value = tree.remove(key);
+                    if (value != null) {
+                        System.out.println(tree.size() == size-1);
+                        tree.put(key, value);
+                        System.out.println(true);
+                    } else {
+                        System.out.println(false);
+                    }
+                    System.out.println(tree.size() == size);
+                }
+                System.out.println(!tree.containsKey(key+"!"));
+                System.out.println(tree.containsPrefix(key));
+                System.out.println(!tree.containsPrefix(key + "!"));
+            }
         }
     }
 }

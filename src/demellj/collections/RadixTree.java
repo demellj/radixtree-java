@@ -74,11 +74,19 @@ public class RadixTree<V> implements Map<String, V> {
             // match ends within but not at end of node substring
             // NOTE: a match cannot end before node substring start, by nature
             // of how findMatchingPrefixEnd(..) works
-            match.node.splitAt(match.matchEnd);
 
-            final Node extension = new Node(key, match.matchEnd, keyLength);
-            match.node.add(extension);
-            extension.value = value;
+            match.node.splitAt(match.matchEnd); // this changes match.node.end
+
+            if (match.node.end == keyLength) {
+                // key is fully matched
+                match.node.value = value;
+            } else {
+                // key is longer than node substring
+                final Node extension = new Node(key, match.matchEnd, keyLength);
+                match.node.add(extension);
+                extension.value = value;
+            }
+
             size++;
         } else {
             // match is complete (ends at end of this node substring)
@@ -207,6 +215,8 @@ public class RadixTree<V> implements Map<String, V> {
     }
 
     private Set<Entry<String, V>> collectEntries(Node start) {
+        assert start != null;
+
         final HashSet<Entry<String, V>> result = new HashSet<>();
 
         final Queue<Node> queue = new LinkedList<>();
@@ -235,6 +245,8 @@ public class RadixTree<V> implements Map<String, V> {
      * @return the prefix match as a PrefixMatch object
      */
     private PrefixMatch findMatchingPrefixEnd(String key) {
+        assert key != null;
+
         Node parent = null;
         Node node = root;
 
@@ -260,7 +272,7 @@ public class RadixTree<V> implements Map<String, V> {
                 return new PrefixMatch(offset, node, parent);
 
             // Need to find if there is a child to continue matching
-            final Node child = node.findChildNodeStartsWith(key, offset);
+            final Node child = node.findChildNodeStartsWith(key.charAt(offset));
 
             if (child == null)
                 return new PrefixMatch(offset, node, parent);
@@ -308,12 +320,15 @@ public class RadixTree<V> implements Map<String, V> {
             this.end = end;
         }
 
-        private void add(Node node) {
+        private void add(Node child) {
+            assert child != null;
+            assert child.start < child.ref.length();
+
             if (children == null)
                 children = new HashMap<>();
 
-            if (!node.ref.isEmpty())
-                children.put(node.ref.charAt(node.start), node);
+            if (!child.ref.isEmpty())
+                children.put(child.ref.charAt(child.start), child);
         }
 
         /**
@@ -323,8 +338,8 @@ public class RadixTree<V> implements Map<String, V> {
          * the head of the split. Will return null if index is not in range.
          */
         private Node splitAt(int index) {
-            if (index < start || index >= end)
-                return null;
+            assert index >= start && index < end;
+
             final Node rest = new Node(ref, index, end);
             rest.children = children;
             rest.value = value;
@@ -358,15 +373,16 @@ public class RadixTree<V> implements Map<String, V> {
         }
 
         private boolean removeChild(Node child) {
+            assert child != null;
+            assert child.start < child.ref.length();
+
             final Character idx = child.ref.charAt(child.start);
 
             if (!isLeafNode()) {
                 final Node actualChild = children.get(idx);
 
-                if (actualChild == child) {
-                    children.remove(idx);
-                    return true;
-                }
+                if (actualChild == child)
+                    return children.remove(idx) != null;
             }
 
             return false;
@@ -380,13 +396,11 @@ public class RadixTree<V> implements Map<String, V> {
             return end - start;
         }
 
-        private Node findChildNodeStartsWith(String ref, int offset) {
+        private Node findChildNodeStartsWith(char idx) {
             if (isLeafNode())
                 return null;
 
-            final Node node = children.get(ref.charAt(offset));
-
-            return node;
+            return children.get(idx);
         }
 
         @Override
