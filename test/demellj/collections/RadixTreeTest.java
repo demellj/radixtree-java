@@ -82,7 +82,7 @@ public class RadixTreeTest {
         System.out.println(tree.containsPrefix(""));
         for (String key : reference.keySet()) {
             final int keyLength = key.length();
-            for (int i = 1; i < keyLength; ++i) {
+            for (int i = 1; i <= keyLength; ++i) {
                 System.out.println(tree.containsPrefix(key.substring(0, keyLength)));
                 System.out.println(!tree.containsPrefix(key.substring(0, keyLength) + "!"));
             }
