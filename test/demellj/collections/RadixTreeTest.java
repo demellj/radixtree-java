@@ -33,17 +33,21 @@ public class RadixTreeTest {
         Set<String> resultSet = tree.keySet();
         System.out.println(resultSet.size() == tree.size());
         System.out.println(tree.containsPrefix(""));
-        for (String key : reference.keySet()) {
-            System.out.println(tree.get(key).equals(reference.get(key)));
-            System.out.println(tree.containsKey(key));
-            System.out.println(tree.containsPrefix(key));
-            System.out.println(tree.containsValue(reference.get(key)));
-            final int keyLength = key.length();
+        for (String refKey : reference.keySet()) {
+            final int keyLength = refKey.length();
             for (int i = 1; i <= keyLength; ++i) {
-                if (!reference.containsKey(key))
+                final String key = refKey.substring(0, i);
+                if (!reference.containsKey(key)) {
                     System.out.println(!tree.containsKey(key));
-                System.out.println(tree.containsPrefix(key.substring(0, keyLength)));
-                System.out.println(!tree.containsPrefix(key.substring(0, keyLength) + "!"));
+                    System.out.println(tree.containsPrefix(key));
+                } else {
+                    System.out.println(tree.get(key).equals(reference.get(key)));
+                    System.out.println(tree.containsKey(key));
+                    System.out.println(tree.containsPrefix(key));
+                    System.out.println(tree.containsValue(reference.get(key)));
+                }
+                System.out.println(!tree.containsKey(key+"!"));
+                System.out.println(!tree.containsPrefix(key + "!"));
             }
         }
         System.out.println(!tree.containsPrefix("z"));
