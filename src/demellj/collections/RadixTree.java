@@ -51,8 +51,6 @@ public class RadixTree<V> implements Map<String, V> {
     /**
      * O(|text|^2) search for all keys occurring the specified text
      *
-     * Consumes O(|text|) extra memory.
-     *
      * @param text the text in which find all key occurrences
      * @return an unsorted list of complete key matches
      */
@@ -91,6 +89,9 @@ public class RadixTree<V> implements Map<String, V> {
 
     @Override
     public V put(String key, V value) {
+        if (value == null || key == null)
+            return null;
+
         final int keyLength = key.length();
 
         final KeyMatch match = findMatchingPrefixEnd(key, 0);
