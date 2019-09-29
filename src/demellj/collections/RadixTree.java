@@ -45,7 +45,7 @@ public class RadixTree<V> implements Map<String, V> {
     }
 
     public boolean containsPrefix(String key) {
-        return findMatchingPrefixEnd(key).matchEnd == key.length();
+        return findMatchingPrefixEnd(key, 0).matchEnd == key.length();
     }
 
     /**
@@ -65,8 +65,8 @@ public class RadixTree<V> implements Map<String, V> {
         final List<KeyMatch> matches = findAllNonemptyPrefixMatches(text);
 
         for (final KeyMatch match : matches) {
-            if (match.endNode.end == match.matchEnd - match.matchStart &&
-                    match.endNode.isValueNode())
+            if (match.node.end == match.matchEnd - match.matchStart &&
+                    match.node.isValueNode())
                 result.add(match);
         }
 
@@ -79,7 +79,7 @@ public class RadixTree<V> implements Map<String, V> {
             return null;
 
         final String key = (String) o;
-        final PrefixMatch match = findMatchingPrefixEnd(key);
+        final KeyMatch match = findMatchingPrefixEnd(key, 0);
 
         if (match.matchEnd == key.length() &&
                 match.matchEnd == match.node.end &&
@@ -93,7 +93,7 @@ public class RadixTree<V> implements Map<String, V> {
     public V put(String key, V value) {
         final int keyLength = key.length();
 
-        final PrefixMatch match = findMatchingPrefixEnd(key);
+        final KeyMatch match = findMatchingPrefixEnd(key, 0);
 
         if (match.node.end != match.matchEnd) {
             // match ends within but not at end of node substring
@@ -140,7 +140,7 @@ public class RadixTree<V> implements Map<String, V> {
             return null;
 
         final String key = (String) o;
-        final PrefixMatch match = findMatchingPrefixEnd(key);
+        final KeyMatch match = findMatchingPrefixEnd(key, 0);
 
         if (match.matchEnd == key.length() &&
                 match.matchEnd == match.node.end &&
@@ -161,7 +161,7 @@ public class RadixTree<V> implements Map<String, V> {
     }
 
     public Set<Entry<String, V>> removePrefix(String prefix) {
-        final PrefixMatch match = findMatchingPrefixEnd(prefix);
+        final KeyMatch match = findMatchingPrefixEnd(prefix, 0);
 
         Set<Entry<String, V>> result = null;
 
@@ -231,7 +231,7 @@ public class RadixTree<V> implements Map<String, V> {
     public Set<Entry<String, V>> entrySet(String prefix) {
         assert prefix != null;
 
-        final PrefixMatch match = findMatchingPrefixEnd(prefix);
+        final KeyMatch match = findMatchingPrefixEnd(prefix, 0);
 
         if (match.matchEnd == prefix.length())
             return collectEntries(match.node);
@@ -268,16 +268,18 @@ public class RadixTree<V> implements Map<String, V> {
      * string "", that matches all substrings.
      *
      * @param key the string against which to find a matching prefix
+     * @param startOffset start the search at this index into key
      * @return the prefix match as a PrefixMatch object
      */
-    private PrefixMatch findMatchingPrefixEnd(String key) {
+    private KeyMatch findMatchingPrefixEnd(String key, int startOffset) {
         assert key != null;
+        assert key.length() == 0 || (startOffset >= 0 && startOffset < key.length());
 
         Node parent = null;
         Node node = root;
+        int offset = startOffset;
 
         final int keyLength = key.length();
-        int offset = 0;
 
         while (true) {
             final int branchLength = node.branchLength();
@@ -287,7 +289,7 @@ public class RadixTree<V> implements Map<String, V> {
                 final int diff = node.ref.charAt(node.start + i) - key.charAt(offset + i);
 
                 if (diff != 0) // partial match
-                    return new PrefixMatch(offset + i, node, parent);
+                    return new KeyMatch(node, parent, startOffset, offset + i);
             }
 
             // NOTE: offset + minLength <= keyLength
@@ -295,35 +297,16 @@ public class RadixTree<V> implements Map<String, V> {
 
             // Might have matched up to somewhere within this node
             if (offset == keyLength || offset < node.end)
-                return new PrefixMatch(offset, node, parent);
+                return new KeyMatch(node, parent, startOffset, offset);
 
             // Need to find if there is a child to continue matching
             final Node child = node.findChildNodeStartsWith(key.charAt(offset));
 
             if (child == null)
-                return new PrefixMatch(offset, node, parent);
+                return new KeyMatch(node, parent, startOffset, offset);
 
             parent = node;
             node = child;
-        }
-    }
-
-    private class PrefixMatch {
-        final int matchEnd; // exclusive
-        final Node node;
-        final Node nodeParent;
-
-        /**
-         * Construct a PrefixMatch object.
-         *
-         * @param matchEnd   the end index of matching prefix in key (exclusive)
-         * @param node       the last node that contains a matched prefix
-         * @param nodeParent the parent of `node`
-         */
-        private PrefixMatch(int matchEnd, Node node, Node nodeParent) {
-            this.matchEnd = matchEnd;
-            this.node = node;
-            this.nodeParent = nodeParent;
         }
     }
 
@@ -336,86 +319,40 @@ public class RadixTree<V> implements Map<String, V> {
     private List<KeyMatch> findAllNonemptyPrefixMatches(String text) {
         assert text != null;
 
-        final int textLength = text.length();
-
-        HashSet<Integer> visited = new HashSet<>();
-
         final List<KeyMatch> result = new LinkedList<>();
 
         for (int offset = 0; offset < text.length(); ++offset) {
-            Node parent = null;
-            Node node = root;
+            final KeyMatch match = findMatchingPrefixEnd(text, offset);
 
-            for (int start = offset - 1, i = offset; node != null && i < textLength; ++i) {
-                if (visited.contains(start + 1))
-                    break;
+            if (match.node == root)
+                continue;
 
-                final char ch = text.charAt(i);
-                final int matchLength = i - start - 1;
-
-                if (node.end == matchLength) {
-                    final Node child = node.findChildNodeStartsWith(ch);
-                    if (child != null) {
-                        parent = node;
-                        node = child;
-                    } else {
-                        if (matchLength > 0) { // ignore the trivial case
-                            result.add(new KeyMatch(node, parent, start + 1, i));
-                            visited.add(start + 1);
-                        }
-                        node = root;
-                        parent = null;
-                        start = i;
-                    }
-                } else {
-                    if (ch - node.ref.charAt(matchLength) != 0) {
-                        if (matchLength > 0) {
-                            result.add(new KeyMatch(node, parent, start + 1, i));
-                            visited.add(start + 1);
-                            parent = node;
-                            node = node.findChildNodeStartsWith(ch);
-                            if (node == null) {
-                                node = root;
-                                parent = null;
-                            }
-                        } else {
-                            node = root;
-                            parent = null;
-                        }
-                        start = i;
-                    }
-                }
-
-                if (i == textLength - 1 && matchLength > 0) {
-                    result.add(new KeyMatch(node, parent, start + 1, i + 1));
-                    visited.add(start + 1);
-                }
-            }
+            result.add(match);
         }
 
         return result;
     }
 
     public class KeyMatch {
-        private final Node parent;
-        private final Node endNode;
+        private final Node nodeParent;
+        private final Node node;
 
         public final int matchStart; // inclusive
         public final int matchEnd;   // exclusive
 
-        private KeyMatch(Node endNode, Node parent, int matchStart, int matchEnd) {
-            this.endNode = endNode;
-            this.parent = parent;
+        private KeyMatch(Node node, Node nodeParent, int matchStart, int matchEnd) {
+            this.node = node;
+            this.nodeParent = nodeParent;
             this.matchStart = matchStart;
             this.matchEnd = matchEnd;
         }
 
         private String getMatchedPrefix() {
-            return endNode.ref.substring(0, matchEnd - matchStart);
+            return node.ref.substring(0, matchEnd - matchStart);
         }
 
         public Entry<String, V> getEntry() {
-            return matchEnd - matchStart == endNode.end ? endNode : null;
+            return matchEnd - matchStart == node.end ? node : null;
         }
     }
 
