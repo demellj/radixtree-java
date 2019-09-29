@@ -28,6 +28,7 @@ public class RadixTree<V> implements Map<String, V> {
     /**
      * O(n) search value stored in this radix tree. Where n is the number of values stored
      * in this tree.
+     *
      * @param value the value to search
      * @return true if value is stored somewhere in the tree
      */
@@ -44,8 +45,22 @@ public class RadixTree<V> implements Map<String, V> {
     }
 
     public boolean containsPrefix(String key) {
-        final PrefixMatch match = findMatchingPrefixEnd(key);
-        return match.matchEnd == key.length();
+        return findMatchingPrefixEnd(key).matchEnd == key.length();
+    }
+
+    public ArrayList<KeyMatch> findKeys(String text) {
+        final ArrayList<KeyMatch> result = new ArrayList<>();
+
+        if (root.isValueNode()) // account of empty prefix
+            result.add(new KeyMatch(root, null, 0, 0));
+
+        for (final KeyMatch match : findAllNonemptyPrefixMatches(text)) {
+            if (match.endNode.end == match.matchEnd - match.matchStart &&
+                    match.endNode.isValueNode())
+                result.add(match);
+        }
+
+        return result;
     }
 
     @Override
@@ -241,6 +256,7 @@ public class RadixTree<V> implements Map<String, V> {
      * Returns the last node that matched some prefix of the given key.
      * If nothing matches, it returns the root whose prefix is the empty
      * string "", that matches all substrings.
+     *
      * @param key the string against which to find a matching prefix
      * @return the prefix match as a PrefixMatch object
      */
@@ -289,14 +305,94 @@ public class RadixTree<V> implements Map<String, V> {
 
         /**
          * Construct a PrefixMatch object.
-         * @param matchEnd the end index of matching prefix in key (exclusive)
-         * @param node the last node that contains a matched prefix
+         *
+         * @param matchEnd   the end index of matching prefix in key (exclusive)
+         * @param node       the last node that contains a matched prefix
          * @param nodeParent the parent of `node`
          */
         private PrefixMatch(int matchEnd, Node node, Node nodeParent) {
             this.matchEnd = matchEnd;
             this.node = node;
             this.nodeParent = nodeParent;
+        }
+    }
+
+    /**
+     * Finds the location all non-empty prefixes that are contained in text.
+     * @param text the text to search for prefixes
+     * @return a list of KeyMatches, which is empty when nothing matched.
+     */
+    private List<KeyMatch> findAllNonemptyPrefixMatches(String text) {
+        assert text != null;
+
+        final int keyLength = text.length();
+
+        Node parent = null;
+        Node node = root;
+
+        final List<KeyMatch> result = new LinkedList<>();
+
+        for (int start = -1, i = 0; node != null && i < keyLength; ++i) {
+            final char ch = text.charAt(i);
+            final int matchLength = i - start - 1;
+
+            if (node.end == matchLength) {
+                final Node child = node.findChildNodeStartsWith(ch);
+                if (child != null) {
+                    parent = node;
+                    node = child;
+                } else {
+                    if (matchLength > 0) // ignore the trivial case
+                        result.add(new KeyMatch(node, parent, start + 1, i));
+                    node = root;
+                    parent = null;
+                    start = i;
+                }
+            } else {
+                if (ch - node.ref.charAt(matchLength) != 0) {
+                    if (matchLength > 0) {
+                        result.add(new KeyMatch(node, parent, start + 1, i));
+                        parent = node;
+                        node = node.findChildNodeStartsWith(ch);
+                        if (node == null) {
+                            node = root;
+                            parent = null;
+                        }
+                    } else {
+                        node = root;
+                        parent = null;
+                    }
+                    start = i;
+                }
+            }
+
+            if (i == keyLength-1 && matchLength > 0)
+                result.add(new KeyMatch(node, parent, start + 1, i + 1));
+        }
+
+        return result;
+    }
+
+    public class KeyMatch {
+        private final Node parent;
+        private final Node endNode;
+
+        public final int matchStart; // inclusive
+        public final int matchEnd;   // exclusive
+
+        private KeyMatch(Node endNode, Node parent, int matchStart, int matchEnd) {
+            this.endNode = endNode;
+            this.parent = parent;
+            this.matchStart = matchStart;
+            this.matchEnd = matchEnd;
+        }
+
+        private String getMatchedPrefix() {
+            return endNode.ref.substring(0, matchEnd - matchStart);
+        }
+
+        public Entry<String, V> getEntry() {
+            return matchEnd - matchStart == endNode.end ? endNode : null;
         }
     }
 
@@ -310,9 +406,10 @@ public class RadixTree<V> implements Map<String, V> {
 
         /**
          * Construct a Node object.
-         * @param ref the reference key
+         *
+         * @param ref   the reference key
          * @param start the start offset in key (inclusive)
-         * @param end the end offset in key (exclusive)
+         * @param end   the end offset in key (exclusive)
          */
         private Node(String ref, int start, int end) {
             this.ref = ref;
@@ -333,6 +430,7 @@ public class RadixTree<V> implements Map<String, V> {
 
         /**
          * Split this Node into two, at the specified index
+         *
          * @param index at which to split this node, must be within range or the operation is aborted
          * @return returns the node that contains the rest of the split, while this node remains
          * the head of the split. Will return null if index is not in range.
@@ -390,6 +488,7 @@ public class RadixTree<V> implements Map<String, V> {
 
         /**
          * Get the length of the substring matched by this node
+         *
          * @return
          */
         private int branchLength() {

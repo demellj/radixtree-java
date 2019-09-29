@@ -1,8 +1,6 @@
 package demellj.collections;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RadixTreeTest {
     public static void main(String[] args) {
@@ -99,6 +97,18 @@ public class RadixTreeTest {
             if (key.equals("")) continue;
             System.out.println(tree.get(key).equals(reference.get(key)));
         }
+        tree.put("", reference.get(""));
+
+        final ArrayList<RadixTree<String>.KeyMatch> matches = tree.findKeys("testing this te cold tested tea");
+        System.out.println(matches.size() == 4);
+        final HashSet<String> matchedKeys = new HashSet<>();
+        for (RadixTree.KeyMatch match : matches) {
+            final Map.Entry<String, String> entry = match.getEntry();
+            System.out.println(reference.containsKey(entry.getKey()));
+            System.out.println(reference.get(entry.getKey()).equals(entry.getValue()));
+            matchedKeys.add(entry.getKey());
+        }
+        System.out.println(matchedKeys.size() == 4); // check for duplicate matches
 
         System.out.println(tree.containsPrefix(""));
         System.out.println(!tree.containsPrefix("z"));
