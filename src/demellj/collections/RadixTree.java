@@ -48,13 +48,23 @@ public class RadixTree<V> implements Map<String, V> {
         return findMatchingPrefixEnd(key).matchEnd == key.length();
     }
 
+    /**
+     * O(|text|^2) search for all keys occurring the specified text
+     *
+     * Consumes O(|text|) extra memory.
+     *
+     * @param text the text in which find all key occurrences
+     * @return an unsorted list of complete key matches
+     */
     public ArrayList<KeyMatch> findKeys(String text) {
         final ArrayList<KeyMatch> result = new ArrayList<>();
 
         if (root.isValueNode()) // account of empty prefix
             result.add(new KeyMatch(root, null, 0, 0));
 
-        for (final KeyMatch match : findAllNonemptyPrefixMatches(text)) {
+        final List<KeyMatch> matches = findAllNonemptyPrefixMatches(text);
+
+        for (final KeyMatch match : matches) {
             if (match.endNode.end == match.matchEnd - match.matchStart &&
                     match.endNode.isValueNode())
                 result.add(match);
@@ -319,55 +329,68 @@ public class RadixTree<V> implements Map<String, V> {
 
     /**
      * Finds the location all non-empty prefixes that are contained in text.
+     *
      * @param text the text to search for prefixes
      * @return a list of KeyMatches, which is empty when nothing matched.
      */
     private List<KeyMatch> findAllNonemptyPrefixMatches(String text) {
         assert text != null;
 
-        final int keyLength = text.length();
+        final int textLength = text.length();
 
         Node parent = null;
         Node node = root;
 
+        HashSet<Integer> visited = new HashSet<>();
+
         final List<KeyMatch> result = new LinkedList<>();
 
-        for (int start = -1, i = 0; node != null && i < keyLength; ++i) {
-            final char ch = text.charAt(i);
-            final int matchLength = i - start - 1;
+        for (int offset = 0; offset < text.length(); ++offset) {
+            for (int start = offset - 1, i = offset; node != null && i < textLength; ++i) {
+                if (visited.contains(start + 1))
+                    break;
 
-            if (node.end == matchLength) {
-                final Node child = node.findChildNodeStartsWith(ch);
-                if (child != null) {
-                    parent = node;
-                    node = child;
-                } else {
-                    if (matchLength > 0) // ignore the trivial case
-                        result.add(new KeyMatch(node, parent, start + 1, i));
-                    node = root;
-                    parent = null;
-                    start = i;
-                }
-            } else {
-                if (ch - node.ref.charAt(matchLength) != 0) {
-                    if (matchLength > 0) {
-                        result.add(new KeyMatch(node, parent, start + 1, i));
+                final char ch = text.charAt(i);
+                final int matchLength = i - start - 1;
+
+                if (node.end == matchLength) {
+                    final Node child = node.findChildNodeStartsWith(ch);
+                    if (child != null) {
                         parent = node;
-                        node = node.findChildNodeStartsWith(ch);
-                        if (node == null) {
+                        node = child;
+                    } else {
+                        if (matchLength > 0) { // ignore the trivial case
+                            result.add(new KeyMatch(node, parent, start + 1, i));
+                            visited.add(start + 1);
+                        }
+                        node = root;
+                        parent = null;
+                        start = i;
+                    }
+                } else {
+                    if (ch - node.ref.charAt(matchLength) != 0) {
+                        if (matchLength > 0) {
+                            result.add(new KeyMatch(node, parent, start + 1, i));
+                            visited.add(start + 1);
+                            parent = node;
+                            node = node.findChildNodeStartsWith(ch);
+                            if (node == null) {
+                                node = root;
+                                parent = null;
+                            }
+                        } else {
                             node = root;
                             parent = null;
                         }
-                    } else {
-                        node = root;
-                        parent = null;
+                        start = i;
                     }
-                    start = i;
+                }
+
+                if (i == textLength - 1 && matchLength > 0) {
+                    result.add(new KeyMatch(node, parent, start + 1, i + 1));
+                    visited.add(start + 1);
                 }
             }
-
-            if (i == keyLength-1 && matchLength > 0)
-                result.add(new KeyMatch(node, parent, start + 1, i + 1));
         }
 
         return result;
