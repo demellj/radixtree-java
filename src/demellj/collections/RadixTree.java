@@ -338,14 +338,14 @@ public class RadixTree<V> implements Map<String, V> {
 
         final int textLength = text.length();
 
-        Node parent = null;
-        Node node = root;
-
         HashSet<Integer> visited = new HashSet<>();
 
         final List<KeyMatch> result = new LinkedList<>();
 
         for (int offset = 0; offset < text.length(); ++offset) {
+            Node parent = null;
+            Node node = root;
+
             for (int start = offset - 1, i = offset; node != null && i < textLength; ++i) {
                 if (visited.contains(start + 1))
                     break;
