@@ -99,10 +99,10 @@ public class RadixTreeTest {
         }
         tree.put("", reference.get(""));
 
-        final ArrayList<RadixTree<String>.KeyMatch> matches = tree.findKeys("testing this tepid cold tested tea");
+        final ArrayList<RadixTree.Match> matches = tree.findKeys("testing this tepid cold tested tea");
         System.out.println(matches.size() == 4);
         final HashSet<String> matchedKeys = new HashSet<>();
-        for (RadixTree.KeyMatch match : matches) {
+        for (RadixTree.Match match : matches) {
             final Map.Entry<String, String> entry = match.getEntry();
             System.out.println(reference.containsKey(entry.getKey()));
             System.out.println(reference.get(entry.getKey()).equals(entry.getValue()));
