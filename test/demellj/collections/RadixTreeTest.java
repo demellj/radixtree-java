@@ -118,25 +118,16 @@ public class RadixTreeTest {
             final int keyLength = refKey.length();
             for (int i = 1; i <= keyLength; ++i) {
                 final String key = refKey.substring(0, i);
+                final int size = tree.size();
                 if (!reference.containsKey(key)) {
                     System.out.println(!tree.containsKey(key));
                     System.out.println(tree.get(key) == null);
-                    final int size = tree.size();
                     System.out.println(tree.remove(key) == null);
-                    System.out.println(tree.size() == size);
-                    final Set<Map.Entry<String, String>> values = tree.removePrefix(key);
-                    System.out.println(tree.size() == size - values.size());
-                    for (Map.Entry<String, String> entry : values) {
-                        System.out.println(!tree.containsKey(entry.getKey()));
-                        System.out.println(tree.get(entry.getKey()) == null);
-                        tree.put(entry.getKey(), entry.getValue());
-                    }
                     System.out.println(tree.size() == size);
                 } else {
                     System.out.println(tree.get(key).equals(reference.get(key)));
                     System.out.println(tree.containsPrefix(key));
                     System.out.println(tree.containsValue(reference.get(key)));
-                    final int size = tree.size();
                     final String value = tree.remove(key);
                     if (value != null) {
                         System.out.println(tree.size() == size-1);
@@ -147,9 +138,17 @@ public class RadixTreeTest {
                     }
                     System.out.println(tree.size() == size);
                 }
+                System.out.println(tree.size() == size);
                 System.out.println(!tree.containsKey(key+"!"));
                 System.out.println(tree.containsPrefix(key));
                 System.out.println(!tree.containsPrefix(key + "!"));
+                final Set<Map.Entry<String, String>> values = tree.removePrefix(key);
+                System.out.println(tree.size() == size - values.size());
+                for (Map.Entry<String, String> entry : values) {
+                    System.out.println(!tree.containsKey(entry.getKey()));
+                    System.out.println(tree.get(entry.getKey()) == null);
+                    tree.put(entry.getKey(), entry.getValue());
+                }
             }
         }
     }
